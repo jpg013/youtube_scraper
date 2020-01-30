@@ -1,4 +1,6 @@
 import scrapy
+import os
+import datetime
 
 BASE_YOUTUBE_URL="https://www.youtube.com"
 
@@ -14,8 +16,28 @@ class BaseYoutubeSpider(scrapy.Spider):
     def make_channel_about_url(self, channel_id):
         return f"{BASE_YOUTUBE_URL}/channel/{channel_id}/about"
 
+    def make_channel_videos_url(self, channel_id):
+        return f"{BASE_YOUTUBE_URL}/channel/{channel_id}/videos"
+
     def closed(reason):
         print("handling the close")
         print(reason)
+
+    def store_response(self, resp):
+        url_parts = resp.url.split(BASE_YOUTUBE_URL)
+
+        if len(url_parts) != 2:
+            return
+
+        now = datetime.datetime.now().replace(microsecond=0).isoformat()
+        filename = "{}{}.html".format(now, url_parts[1].replace("/", "_"))
+
+        path = os.path.join('tmp', "youtube", filename)
+
+        with open(path, 'wb') as f:
+            f.write(resp.body)
+        
+        self.log('saved response %s' % filename)
+
 
 

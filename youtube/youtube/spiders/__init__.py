@@ -4,3 +4,4 @@
 # your spiders.
 
 from .channel_about_spider import ChannelAboutSpider
+from .channel_videos_spider import ChannelVideosSpider

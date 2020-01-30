@@ -1,7 +1,7 @@
 import scrapy
 import os
 from .base_youtube_spider import BaseYoutubeSpider
-import youtube.parsers as parsers
+import youtube.scrapers.scrape_channel_about as scrapers
 from collections import ChainMap
 
 class ChannelAboutSpider(BaseYoutubeSpider):
@@ -16,19 +16,20 @@ class ChannelAboutSpider(BaseYoutubeSpider):
         
         super(ChannelAboutSpider, self).__init__(*args, **kwargs)
 
-        # pipeline of parsers
-        self.parsing_pipeline = [
-            parsers.parse_channel_about_name,
-            parsers.parse_channel_about_description,
-            parsers.parse_channel_about_subscriber_count,
-            parsers.parse_channel_about_stats,
-            parsers.parse_channel_about_location,
-            parsers.parse_channel_about_links
+        # list of scrapers
+        self.scraping_pipeline = [
+            scrapers.scrape_channel_about_name,
+            scrapers.scrape_channel_about_description,
+            scrapers.scrape_channel_about_subscriber_count,
+            scrapers.scrape_channel_about_stats,
+            scrapers.scrape_channel_about_location,
+            scrapers.scrape_channel_about_links,
+            scrapers.scrape_channel_about_banner,
+            scrapers.scrape_channel_about_is_verified,
         ]
 
         # map channel ids to start urls
         self.start_urls = list(map(self.make_channel_about_url, channel_ids))
-        print(self.start_urls)
 
     def start_requests(self):
         for url in self.start_urls:
@@ -38,20 +39,13 @@ class ChannelAboutSpider(BaseYoutubeSpider):
                 errback=self.handle_error
             )
 
-    def parse_results(self, resp):
-        results = list(map(lambda x: x(resp), self.parsing_pipeline))
-        return dict(ChainMap(*results))
+    def scrape_results(self, resp):
+        results = list(map(lambda x: x(resp), self.scraping_pipeline))
+        self.results = dict(ChainMap(*results))
 
     def handle_response(self, response):
-        self.spider_results = self.parse_results(response)
-        # parts = response.url.split("/")
-        # filename = "youtube_channel_about_%s.html" % parts[4]
-        # path = os.path.join('tmp', filename)
-
-        # with open(path, 'wb') as f:
-        #     f.write(response.body)
-        
-        # self.log('Saved file %s' % filename)
+        self.store_response(response)
+        self.scrape_results(response)
 
     def handle_error(self, failure):
         print("in the handle error")
