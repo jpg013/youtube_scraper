@@ -1,7 +1,6 @@
 import scrapy
 import os
-import datetime
-
+import json
 BASE_YOUTUBE_URL="https://www.youtube.com"
 
 """BaseYoutubeSpider class is base spider to be inherited from by 
@@ -23,21 +22,13 @@ class BaseYoutubeSpider(scrapy.Spider):
         print("handling the close")
         print(reason)
 
-    def store_response(self, resp):
-        url_parts = resp.url.split(BASE_YOUTUBE_URL)
-
-        if len(url_parts) != 2:
-            return
-
-        now = datetime.datetime.now().replace(microsecond=0).isoformat()
-        filename = "{}{}.html".format(now, url_parts[1].replace("/", "_"))
-
-        path = os.path.join('tmp', "youtube", filename)
-
-        with open(path, 'wb') as f:
-            f.write(resp.body)
+    def store_response(self, key, data):
+        path = os.path.join('tmp', "youtube", "{}.json".format(key))
+        print(path)
+        with open(path, 'w', encoding="utf8") as outfile:
+            json.dump(data, outfile)
         
-        self.log('saved response %s' % filename)
+        self.log('saved response %s' % path)
 
 
 
