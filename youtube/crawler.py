@@ -10,16 +10,14 @@ def youtube_channel_about_crawler(runner):
     reactor.stop()
 
 @defer.inlineCallbacks
-def youtube_channel_videos_crawler(runner):
-    print("here!")
-    yield runner.crawl(spiders.ChannelVideosSpider, channel_id=sys.argv[2])
+def youtube_channel_video_crawler(runner):
+    yield runner.crawl(spiders.ChannelVideoSpider, channel_id=sys.argv[2])
     reactor.stop()
-
 
 def switch_crawler(name):
     switcher = {
         "crawl_channel_about": youtube_channel_about_crawler,
-        "crawl_channel_videos": youtube_channel_videos_crawler,
+        "crawl_channel_video": youtube_channel_video_crawler,
     }
 
     return switcher.get(name, "invalid crawler")

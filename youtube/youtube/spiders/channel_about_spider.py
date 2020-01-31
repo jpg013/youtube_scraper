@@ -1,8 +1,9 @@
 import scrapy
+from scrapy.loader import ItemLoader
 import os
 from .base_youtube_spider import BaseYoutubeSpider
-import youtube.scrapers.scrape_channel_about as scrapers
-from collections import ChainMap
+import youtube.parsers.parse_channel_about as parsers
+from youtube.items import AboutChannelItem
 
 class ChannelAboutSpider(BaseYoutubeSpider):
     name="youtube_channel_about_spider"
@@ -16,18 +17,6 @@ class ChannelAboutSpider(BaseYoutubeSpider):
         
         super(ChannelAboutSpider, self).__init__(*args, **kwargs)
 
-        # list of scrapers
-        self.scraping_pipeline = [
-            scrapers.scrape_channel_about_name,
-            scrapers.scrape_channel_about_description,
-            scrapers.scrape_channel_about_subscriber_count,
-            scrapers.scrape_channel_about_stats,
-            scrapers.scrape_channel_about_location,
-            scrapers.scrape_channel_about_links,
-            scrapers.scrape_channel_about_banner,
-            scrapers.scrape_channel_about_is_verified,
-        ]
-
         # map channel ids to start urls
         self.start_urls = list(map(self.make_channel_about_url, channel_ids))
 
@@ -39,13 +28,29 @@ class ChannelAboutSpider(BaseYoutubeSpider):
                 errback=self.handle_error
             )
 
-    def scrape_results(self, resp):
-        results = list(map(lambda x: x(resp), self.scraping_pipeline))
-        self.results = dict(ChainMap(*results))
+    def parse_data(self, response):
+        l = ItemLoader(item=AboutChannelItem(), response=response)
+        l.add_css("location", ".country-inline::text")
+        l.add_xpath("description", "//div[contains(@class,'about-description')]/pre/text()")
+        l.add_xpath("banner_url", "//div[contains(@id,'gh-banner')]/style/text()")
+        l.add_css("subscriber_count", ".yt-subscription-button-subscriber-count-branded-horizontal::text")
+        l.add_css("is_verified", ".qualified-channel-title.has-badge")
+        l.add_xpath("joined_at", "//div[contains(@class, 'about-stats')]/span[2]/text()")
+        l.add_xpath("view_count", "//div[contains(@class, 'about-stats')]/span/b/text()")
+        l.add_xpath("user_name", "//a[contains(@class, 'channel-header-profile-image-container')]/@href")
+        l.add_xpath("screen_name", "//a[contains(@class, 'channel-header-profile-image-container')]/img/@title")
+        l.add_xpath("profile_image", "//a[contains(@class, 'channel-header-profile-image-container')]/img/@src")
+
+        for link in parsers.parse_channel_about_links(response):
+            l.add_value("links", link)
+
+        return l.load_item()
 
     def handle_response(self, response):
         self.store_response(response)
-        self.scrape_results(response)
+        data = self.parse_data(response)
+        
+        print(data)
 
     def handle_error(self, failure):
         print("in the handle error")

@@ -16,8 +16,8 @@ class BaseYoutubeSpider(scrapy.Spider):
     def make_channel_about_url(self, channel_id):
         return f"{BASE_YOUTUBE_URL}/channel/{channel_id}/about"
 
-    def make_channel_videos_url(self, channel_id):
-        return f"{BASE_YOUTUBE_URL}/channel/{channel_id}/videos"
+    def make_channel_video_url(self, channel_id, sort):
+        return f"{BASE_YOUTUBE_URL}/channel/{channel_id}/videos?view=0&sort=dd&flow=grid"
 
     def closed(reason):
         print("handling the close")
