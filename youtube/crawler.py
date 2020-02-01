@@ -12,6 +12,7 @@ def youtube_channel_about_crawler(runner):
 @defer.inlineCallbacks
 def youtube_channel_video_crawler(runner):
     yield runner.crawl(spiders.ChannelVideoSpider, channel_id=sys.argv[2])
+    print("done crawling spider")
     reactor.stop()
 
 def switch_crawler(name):
