@@ -4,3 +4,4 @@
 
 from .channel_about_spider import ChannelAboutSpider
 from .channel_video_spider import ChannelVideoSpider
+from .channel_subscriber_spider import ChannelSubscriberSpider

@@ -7,6 +7,13 @@ def strip(value):
     """strip removes all whitespace around string"""
     return value.strip() if isinstance(value, str) else ""
 
+def to_int(value):
+    """tries to convert value to int"""
+    try:
+        return int(value)
+    except:
+        return value
+
 def lower(value):
     """lower converts string to lowercase"""
     return value.lower() if isinstance(value, str) else ""
@@ -39,6 +46,44 @@ def extract_digits(value):
     digits = re.findall(r'\d+', value)
     
     return "".join(digits)
+
+def extract_channel_id_from_path(value):
+    if not isinstance(value, str):
+        return
+    
+    return value.split("/")[-1]
+
+def transform_subscriber_count(value):
+    """takes a subscriber count display string in the format of 
+    (127, 243K, 12.5M) and transforms it to integer value"""
+    if not isinstance(value, str):
+        return
+
+    st = value[-1].lower()
+
+    if st == "k":
+        return value[:-1] + "000"
+
+    if st == "m":
+        return value[:-1] + "00000"
+
+    return value
+
+class ChannelSubscriberItem(scrapy.Item):
+    channel_id = scrapy.Field(
+        input_processor=MapCompose(extract_channel_id_from_path),
+        output_processor=TakeFirst()
+    )
+
+    name = scrapy.Field(
+        input_processor=MapCompose(strip),
+        output_processor=TakeFirst()
+    )
+
+    subscriber_count = scrapy.Field(
+        input_processor=MapCompose(strip, with_replace("."), transform_subscriber_count, to_int),
+        output_processor=TakeFirst()
+    )
 
 class ChannelVideoItem(scrapy.Item):
     id = scrapy.Field(
