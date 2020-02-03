@@ -4,12 +4,10 @@ from scrapy.selector import Selector
 from scrapy.exceptions import CloseSpider
 from .base_youtube_spider import BaseYoutubeSpider
 import youtube.parsers.parse_channel_subscriber as parsers
-from collections import ChainMap
 from scrapy.loader import ItemLoader
 from youtube.items import ChannelSubscriberItem
 import json
 import datetime
-import time
 import urllib.parse
 
 # python3 youtube/crawler.py crawl_channel_subsriber UCXX1iQGufHujuIvQ38MPKMA
@@ -82,7 +80,7 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
         print("crawling url", crawl_url)
         
         self.crawl_count +=1
-        time.sleep(1)
+
         yield scrapy.Request(
             url=crawl_url,
             callback=self.handle_response,
