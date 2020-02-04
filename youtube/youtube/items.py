@@ -59,30 +59,43 @@ def transform_subscriber_count(value):
     if not isinstance(value, str):
         return
 
-    st = value[-1].lower()
+    ch = value[-1].lower()
+    digits = value[:-1]
 
-    if st == "k":
-        return value[:-1] + "000"
+    if ch == "k":
+        zero_count = 3
+        return digits.ljust(len(digits) + zero_count, "0")
 
-    if st == "m":
-        return value[:-1] + "00000"
+    if ch == "m":
+        parts = digits.split(".")
+        pre_count = parts[0]
+        post_count = parts[1]
+        zero_count = 6 - (len(post_count))
+        return digits.replace(".", "").ljust(len(post_count + pre_count) + zero_count, "0")
 
     return value
+
+def serialize_channel_id(value):
+    print("WHAT IN THE FOOK")
+    return '$ %s' % str(value)
 
 class ChannelSubscriberItem(scrapy.Item):
     channel_id = scrapy.Field(
         input_processor=MapCompose(extract_channel_id_from_path),
-        output_processor=TakeFirst()
+        output_processor=TakeFirst(),
+        serializer=serialize_channel_id
     )
 
     name = scrapy.Field(
         input_processor=MapCompose(strip),
-        output_processor=TakeFirst()
+        output_processor=TakeFirst(),
+        serializer=serialize_channel_id,
     )
 
     subscriber_count = scrapy.Field(
-        input_processor=MapCompose(strip, with_replace("."), transform_subscriber_count, to_int),
-        output_processor=TakeFirst()
+        input_processor=MapCompose(strip, transform_subscriber_count, to_int),
+        output_processor=TakeFirst(),
+        serializer=serialize_channel_id,
     )
 
 class ChannelVideoItem(scrapy.Item):

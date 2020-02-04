@@ -1,8 +1,16 @@
-# https://www.youtube.com/browse_ajax?ctoken=4qmFsgI0EhhVQ1hYMWlRR3VmSHVqdUl2UTM4TVBLTUEaGEVnWjJhV1JsYjNNZ0FEZ0JlZ0V5dUFFQQ%253D%253D&continuation=4qmFsgI0EhhVQ1hYMWlRR3VmSHVqdUl2UTM4TVBLTUEaGEVnWjJhV1JsYjNNZ0FEZ0JlZ0V5dUFFQQ%253D%253D&itct=CD4QybcCIhMIhsLojYes5wIVkq8NCh2F0wOL
 
-import requests
+def infinite_sequence():
+    num = 0
+    while True:
+        yield num
+        num += 1
 
-
-resp = requests.get("https://www.youtube.com/browse_ajax?ctoken=4qmFsgI0EhhVQ1hYMWlRR3VmSHVqdUl2UTM4TVBLTUEaGEVnWjJhV1JsYjNNZ0FEZ0JlZ0V5dUFFQQ%253D%253D&continuation=4qmFsgI0EhhVQ1hYMWlRR3VmSHVqdUl2UTM4TVBLTUEaGEVnWjJhV1JsYjNNZ0FEZ0JlZ0V5dUFFQQ%253D%253D&itct=CD4QybcCIhMIhsLojYes5wIVkq8NCh2F0wOL")
-
-print(resp.json())
+if __name__ == "__main__":
+    gen = infinite_sequence()
+    print(next(gen))
+    print(next(gen))
+    print(next(gen))
+    print(next(gen))
+    print(next(gen))
+    print(next(gen))
+    # main()

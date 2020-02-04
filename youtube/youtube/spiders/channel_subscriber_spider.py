@@ -19,21 +19,44 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
     # Max number of crawls spider is allowed to make
     max_crawl_count=10
 
-    def __init__(self, channel_id=None, limit=200, *args, **kwargs):
-        if channel_id is None:
+    # default number of subscribers to crawl
+    default_limit = 100
+
+    def __init__(self, spider_id=None, *args, **kwargs):
+        super(ChannelSubscriberSpider, self).__init__(*args, **kwargs)      
+
+        if spider_id is None:
+            raise Exception("spider_id arg must be defined")
+
+        self.spider_id = spider_id
+
+        self.parse_args(**kwargs)
+        
+        if self.channel_id is None:
             raise Exception("channel_id arg must be defined")
+        
+        if self.limit is None:
+            self.limit = ChannelSubscriberSpider.default_limit
 
-        super(ChannelSubscriberSpider, self).__init__(*args, **kwargs)
-
-        # parse the sort option
-        self.limit = limit;
-        self.channel_id = channel_id
-        self.crawl_results = []
+        self.spider_results = {
+            "spider_name": ChannelSubscriberSpider.name,
+            "youtube_channel_id": self.channel_id,
+            "spider_limit": self.limit,
+            "spider_id": self.spider_id,
+            "results": []
+        }
         self.crawl_count = 0
+        self.make_response_dir(self.spider_id)
+    
+    def parse_args(self, **kwargs):
+        for key, value in kwargs.items():
+            if key == "channel_id":
+                self.channel_id = value
+            elif key == "limit":
+                self.limit = value
 
     def start_requests(self):
         url = self.make_start_crawl_url()
-
         return self.do_crawl(url)
         
     def parse_subscriber_item(self, sel):
@@ -67,17 +90,15 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
         # enumerate over each subscriber content and parse into data item
         for idx, item in enumerate(parsers.parse_subscriber_content_items(content_sel)):
             data = self.parse_subscriber_item(item)
-            results["data"].append(data)
+            results["data"].append(dict(data))
             results["count"] += 1
 
         # append the results dictionary to the spider crawl results
-        self.crawl_results.append(results)
+        self.spider_results["results"].append(results)
 
     def do_crawl(self, crawl_url):
         if self.crawl_count > ChannelSubscriberSpider.max_crawl_count:
             raise CloseSpider('max_crawl_count exceeded')
-
-        print("crawling url", crawl_url)
         
         self.crawl_count +=1
 
@@ -118,13 +139,13 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
         if self.crawl_count > ChannelSubscriberSpider.max_crawl_count:
             return
         
-        # do we have any crawl results
-        if len(self.crawl_results) == 0:
+        # do we have any results
+        if len(self.spider_results["results"]) == 0:
             return
         
-        # get the next_url property from the last crawled result
-        last_result = self.crawl_results[-1]
-        next_url = last_result["next_url"] if last_result is not None else None
+        # get the next_url property from the previous crawled result
+        previous_result = self.spider_results["results"][-1]
+        next_url = previous_result["next_url"] if previous_result is not None else None
         
         # check if next_url exists
         if next_url is None:
@@ -138,7 +159,7 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
     def get_total_results(self):
         total = 0
         
-        for res_obj in self.crawl_results:
+        for res_obj in self.spider_results["results"]:
             total += res_obj["count"]
         
         return total
@@ -156,6 +177,4 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
     def spider_closed(self, spider):
         print("SPIDER IS GETTING CLOSED")
 
-        for result in self.crawl_results:
-            for item in result["data"]:
-                print(item)
+        self.store_spider_results(self.spider_results, ChannelSubscriberSpider)
