@@ -50,7 +50,6 @@ def handle_crawler(crawler_name):
 #----------------------------------------------------------------------------#
 
 if not app.debug:
-    print("HERE??")
     app.logger.setLevel(logging.INFO)
     # app.logger.addHandler(file_handler)
 

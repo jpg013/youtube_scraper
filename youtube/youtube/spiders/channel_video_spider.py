@@ -138,7 +138,6 @@ class ChannelVideoSpider(BaseYoutubeSpider):
         next_url = last["next_url"] if last is not None else None
         
         if next_url is None:
-            print("What the fook are we here??")
             return
 
         return "{}{}".format(

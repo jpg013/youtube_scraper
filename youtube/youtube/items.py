@@ -75,27 +75,20 @@ def transform_subscriber_count(value):
 
     return value
 
-def serialize_channel_id(value):
-    print("WHAT IN THE FOOK")
-    return '$ %s' % str(value)
-
 class ChannelSubscriberItem(scrapy.Item):
     channel_id = scrapy.Field(
         input_processor=MapCompose(extract_channel_id_from_path),
         output_processor=TakeFirst(),
-        serializer=serialize_channel_id
     )
 
     name = scrapy.Field(
         input_processor=MapCompose(strip),
         output_processor=TakeFirst(),
-        serializer=serialize_channel_id,
     )
 
     subscriber_count = scrapy.Field(
         input_processor=MapCompose(strip, transform_subscriber_count, to_int),
         output_processor=TakeFirst(),
-        serializer=serialize_channel_id,
     )
 
 class ChannelVideoItem(scrapy.Item):

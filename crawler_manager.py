@@ -20,6 +20,9 @@ class CrawlerManager():
             self.crawl_by_process,
             self.upload_results_to_s3,
         )
+
+        self.task_pool.run()
+
     def spider_closing(self):
         """Activates on spider closed signal"""
         print("Closing reactor")
@@ -47,8 +50,6 @@ class CrawlerManager():
         for f in os.listdir(dir_path):
             file_name = os.path.join(dir_path, f)
             object_name = "{}/{}".format(crawler_id, f)
-            print("storing file", file_name)
-            print("object", object_name)
             try:
                 self.s3_client.upload_file(file_name, self.s3_bucket, object_name)
             except Exception as e:
@@ -64,17 +65,12 @@ class CrawlerManager():
             return None
 
     def crawl_by_process(self, crawler_id, crawler_name, args):
-        print("in the crawl by process")
-        print(crawler_name)
-        print(crawler_id)
-        print(args)
-        # print(args)
-        # crawler_id = self.generate_crawler_id(crawler_name)
-        # cmd = ["python3", "youtube/crawler.py", crawler_name, crawler_id,  json.dumps(crawl_args)]
-        # process = subprocess.run(cmd)
+        cmd = ["python3", "youtube/crawler.py", crawler_name, crawler_id,  json.dumps(args)]
+        process = subprocess.run(cmd)
 
-        # if process.returncode == 0:
-        #     self.upload_results_to_s3(crawler_id)
-        # else:
-        #     print("FAILURE")
+        if process.returncode != 0:
+            print("FAILURE")
+
+        # Return the crawler_id to the calling thread 
+        return crawler_id
         
