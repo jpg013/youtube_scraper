@@ -24,7 +24,7 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
 
     def __init__(self, spider_id=None, *args, **kwargs):
         super(ChannelSubscriberSpider, self).__init__(*args, **kwargs)      
-
+        
         if spider_id is None:
             raise Exception("spider_id arg must be defined")
 
@@ -101,7 +101,7 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
             raise CloseSpider('max_crawl_count exceeded')
         
         self.crawl_count +=1
-
+        
         yield scrapy.Request(
             url=crawl_url,
             callback=self.handle_response,
@@ -122,6 +122,8 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
         )
 
     def handle_response(self, resp):
+        print(resp.request.headers)
+        print(resp.request)
         try:
             self.store_response(resp, ChannelSubscriberSpider)
             self.parse_results(resp)

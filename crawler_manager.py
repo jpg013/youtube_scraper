@@ -65,7 +65,7 @@ class CrawlerManager():
             return None
 
     def crawl_by_process(self, crawler_id, crawler_name, args):
-        cmd = ["python3", "youtube/crawler.py", crawler_name, crawler_id,  json.dumps(args)]
+        cmd = ["python3", "crawler.py", crawler_name, crawler_id,  json.dumps(args)]
         process = subprocess.run(cmd)
 
         if process.returncode != 0:

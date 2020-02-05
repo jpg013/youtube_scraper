@@ -16,7 +16,7 @@ NEWSPIDER_MODULE = 'youtube.spiders'
 LOG_ENABLED = False
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'youtube (+http://www.yourdomain.com)'
+USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) '
 USER_AGENTS = [
     ('Mozilla/5.0 (X11; Linux x86_64) '
      'AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -77,10 +77,13 @@ COOKIES_ENABLED = False
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {'scrapy_crawlera.CrawleraMiddleware': 300}
+DOWNLOADER_MIDDLEWARES = {
+    "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
+    "scrapy_useragents.downloadermiddlewares.useragents.UserAgentsMiddleware": 500,
+    'scrapy_crawlera.CrawleraMiddleware': 300
+}
 CRAWLERA_ENABLED = True
 CRAWLERA_APIKEY = 'e4b64b0321a44ff68209a49dcf5dacfb'
-
 DOWNLOAD_TIMEOUT = 600
 
 # Enable or disable extensions
