@@ -23,13 +23,11 @@ class ChannelSubscriberSpider(BaseYoutubeSpider):
     default_limit = 100
 
     def __init__(self, spider_id=None, *args, **kwargs):
-        super(ChannelSubscriberSpider, self).__init__(*args, **kwargs)      
-        
         if spider_id is None:
             raise Exception("spider_id arg must be defined")
-
+        
+        super(ChannelSubscriberSpider, self).__init__(spider_id, *args, **kwargs)
         self.spider_id = spider_id
-
         self.parse_args(**kwargs)
         
         if self.channel_id is None:

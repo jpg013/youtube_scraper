@@ -1,11 +1,15 @@
 from queue import Queue
 from threading import Thread
 import sys
+from shelob.logger import log_provider
+from logging import getLogger
+
+logger = getLogger("shelob.task_queue")
 
 # default exception handler.
 def default_handler(name, exception, *args, **kwargs):
-    print("%s raised %s with args %s and kwargs %s", name, str(exception), repr(args), repr(kwargs), file=sys.stderr)
-    pass  
+    print(exception)
+    # logger.error("%s raised %s with args %s and kwargs %s", name, str(exception), repr(args), repr(kwargs), file=sys.stderr)
 
 class TaskWorker(Thread):
     """Thread executing tasks from a given tasks queue"""
@@ -20,6 +24,7 @@ class TaskWorker(Thread):
     def run(self):
         while True:
             func, args, kwargs = self.task_queue.get()
+
             # the function may raise
             try:
                 task_result = func(*args, **kwargs)
@@ -31,11 +36,11 @@ class TaskWorker(Thread):
                 #task complete no matter what happened
                 self.task_queue.task_done()
 
-class TaskPool:
-    """Pool of worker threads consuming tasks from a queue"""
-    def __init__(self, worker_count, do_task, result_handler=None):
+class TaskQueue:
+    """Queue of worker threads consuming tasks"""
+    def __init__(self, max_size, worker_count, do_task, result_handler=None):
         self.worker_count = worker_count
-        self.queue = Queue(worker_count)
+        self.queue = Queue(max_size)
         self.workers = []
         self.result_handler = result_handler
         self.do_task = do_task

@@ -3,25 +3,31 @@ from twisted.internet import reactor
 import subprocess
 import boto3
 from botocore.exceptions import NoCredentialsError
-from task_pool import TaskPool
+from shelob.task_queue import TaskQueue
+from shelob.config import AppConfig
+from logging import getLogger
+import uuid
+from enum import Enum
+
+logger = getLogger("shelob.crawler_manager")
 
 class CrawlerManager():
-    def __init__(self, config):
-        self.s3_access_key_id = config.get("S3_ACCESS_KEY_ID", "")
-        self.s3_bucket = config.get("S3_BUCKET", "")
-        self.s3_secret_access_key = config.get("S3_SECRET_ACCESS_KEY", "")
+    def __init__(self):
+        self.s3_access_key_id = AppConfig.S3_ACCESS_KEY_ID
+        self.s3_bucket = AppConfig.S3_BUCKET
+        self.s3_secret_access_key = AppConfig.S3_SECRET_ACCESS_KEY
         self.s3_client = boto3.client(
             "s3",
             aws_access_key_id=self.s3_access_key_id,
             aws_secret_access_key=self.s3_secret_access_key
         )
-        self.task_pool = TaskPool(
-            10, # 10 task workers,
-            self.crawl_by_process,
-            self.upload_results_to_s3,
+        self.task_queue = TaskQueue(
+            max_size=1000,
+            worker_count=10,
+            do_task=self.crawl_by_process,
+            result_handler=self.upload_results_to_s3,
         )
-
-        self.task_pool.run()
+        self.task_queue.run()
 
     def spider_closing(self):
         """Activates on spider closed signal"""
@@ -41,10 +47,10 @@ class CrawlerManager():
             reactor.stop()
 
     def generate_crawler_id(self, crawler_name):
-        now = datetime.datetime.now().isoformat()
-        return "{}_{}".format(crawler_name, now)
+        return "{}_{}".format(crawler_name, uuid.uuid4())
 
     def upload_results_to_s3(self, crawler_id):
+        return
         dir_path = "tmp/{}".format(crawler_id)
 
         for f in os.listdir(dir_path):
@@ -55,22 +61,24 @@ class CrawlerManager():
             except Exception as e:
                 print(e)
 
-    def schedule_crawl_task(self, crawler_name, args):
+    def schedule_crawl_task(self, crawler_name, crawler_args):
         try:
             crawler_id = self.generate_crawler_id(crawler_name)
-            self.task_pool.add_task(crawler_id, crawler_name, args)
-            return crawler_id    
+            self.task_queue.add_task(crawler_name, crawler_id, crawler_args)
+            return crawler_id
         except Queue.Full:
             print("Queue is full")
             return None
 
-    def crawl_by_process(self, crawler_id, crawler_name, args):
-        cmd = ["python3", "crawler.py", crawler_name, crawler_id,  json.dumps(args)]
+    def crawl_by_process(self, crawler_name, crawler_id, *args):
+        logger.info("starting crawler \"%s\" with id \"%s\" and args %s", crawler_name, crawler_id, repr(args))
+        cmd = ["python3", "shelob/crawler.py", crawler_name, crawler_id,  json.dumps(*args)]
         process = subprocess.run(cmd)
 
         if process.returncode != 0:
-            print("FAILURE")
+            logger.error("error running crawler \"%s\" with id \"%s\" and args %s", crawler_name, crawler_id, repr(args))
+            return
 
-        # Return the crawler_id to the calling thread 
+        # Return the crawler_id to the calling thread
         return crawler_id
         

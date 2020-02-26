@@ -13,11 +13,12 @@ class BaseYoutubeSpider(scrapy.Spider):
 
     base_url="https://www.youtube.com"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, spider_id=None, *args, **kwargs):
         super(BaseYoutubeSpider, self).__init__(*args, **kwargs)
+        self.make_response_dir(spider_id)
 
     def make_channel_about_url(self, channel_id):
-        return f"{BASE_YOUTUBE_URL}/channel/{channel_id}/about"
+        return f"{self.base_url}/channel/{channel_id}/about"
 
     def get_base_url(self):
         return BaseYoutubeSpider.base_url
@@ -26,26 +27,26 @@ class BaseYoutubeSpider(scrapy.Spider):
         self.response_dir = "tmp/{}".format(object_id)
         Path(self.response_dir).mkdir(parents=True, exist_ok=True)
 
-    def store_response(self, response, spider):
-        obj = self.make_storage_object(response, spider.name)
+    def store_response(self, response, spider_id):
+        obj = self.make_storage_object(response, spider_id)
         key = self.make_storage_key(response.url)
         path = os.path.join(self.response_dir, "{}".format(key))
         
         with open(path, 'w', encoding="utf8") as outfile:
             json.dump(obj, outfile)
         
-    def store_spider_results(self, data, spider):
+    def store_spider_results(self, data):
         key = "spider_results.json"
         path = os.path.join(self.response_dir, "{}".format(key))
         
         with open(path, 'w', encoding="utf8") as outfile:
             json.dump(data, outfile)
 
-    def make_storage_object(self, response, spider_name):
+    def make_storage_object(self, response, spider_id):
         return {
             "scrape_url": response.url,
             "response_content": response.body_as_unicode(),
-            "spider_name": spider_name,
+            "spider_id": spider_id,
             "crawled_at": datetime.datetime.now().isoformat(),
         }
 
@@ -55,6 +56,3 @@ class BaseYoutubeSpider(scrapy.Spider):
         
         # parse the crawl url into readable file path 
         return "youtube{}.{}-json".format(parsed_url.path.replace("/", "-"), now)
-
-
-
