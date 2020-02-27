@@ -50,16 +50,21 @@ class CrawlerManager():
         return "{}_{}".format(crawler_name, uuid.uuid4())
 
     def upload_results_to_s3(self, crawler_id):
-        return
         dir_path = "tmp/{}".format(crawler_id)
-
         for f in os.listdir(dir_path):
             file_name = os.path.join(dir_path, f)
             object_name = "{}/{}".format(crawler_id, f)
             try:
                 self.s3_client.upload_file(file_name, self.s3_bucket, object_name)
+                logger.info("successfully uploaded results to {} for crawler \"{}\"".format(
+                    object_name,
+                    crawler_id
+                ))
             except Exception as e:
-                print(e)
+                logger.error("Error uploading results to S3 for crawler: \"{}\": {}".format(
+                    crawler_id,
+                    e
+                ))
 
     def schedule_crawl_task(self, crawler_name, crawler_args):
         try:

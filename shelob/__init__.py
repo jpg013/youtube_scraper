@@ -12,7 +12,7 @@ def create_app():
     with app.app_context():
         # configure logger
         from shelob.logger import log_provider
-        log_provider.config_logger(app.logger)
+        logger = log_provider.config_logger(__name__)
         
         # config app
         from shelob.config import AppConfig
@@ -34,5 +34,5 @@ def create_app():
         # add error handlers to application
         add_error_handlers(app)
 
-        app.logger.info("application created")
+        logger.info("application created")
         return app

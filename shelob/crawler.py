@@ -5,8 +5,6 @@ import logging
 from scrapy.utils.project import get_project_settings
 import youtube.spiders as spiders
 import json
-import time
-from enum import Enum
 
 @defer.inlineCallbacks
 def crawl_youtube_channel_about(runner, spider_id, *args, **kwargs):

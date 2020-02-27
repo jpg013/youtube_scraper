@@ -113,16 +113,20 @@ class LogProvider():
         kafka_handler.setLevel(INFO)
         return kafka_handler
     
-    def config_logger(self, logger):
+    def config_logger(self, app_name):
+        logger = getLogger(app_name)
+            
+        # if testing exit early
         if AppConfig.TESTING is True:
-            return
+            return logger
 
         if AppConfig.DEBUG is True:
             logger.setLevel(DEBUG)
             logger.addHandler(self.stdout_handler())
-        else:
-            logger.setLevel(INFO)
-        
+            return logger
+
+        # set production level to info and add kafka handler
+        logger.setLevel(INFO)
         logger.addHandler(self.kafka_handler())
 
         return logger

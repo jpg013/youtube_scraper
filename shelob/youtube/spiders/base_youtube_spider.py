@@ -27,8 +27,8 @@ class BaseYoutubeSpider(scrapy.Spider):
         self.response_dir = "tmp/{}".format(object_id)
         Path(self.response_dir).mkdir(parents=True, exist_ok=True)
 
-    def store_response(self, response, spider_id):
-        obj = self.make_storage_object(response, spider_id)
+    def store_response(self, response, spider_id, spider_name):
+        obj = self.make_storage_object(response, spider_id, spider_name)
         key = self.make_storage_key(response.url)
         path = os.path.join(self.response_dir, "{}".format(key))
         
@@ -42,12 +42,14 @@ class BaseYoutubeSpider(scrapy.Spider):
         with open(path, 'w', encoding="utf8") as outfile:
             json.dump(data, outfile)
 
-    def make_storage_object(self, response, spider_id):
+    def make_storage_object(self, response, spider_id, spider_name):
         return {
             "scrape_url": response.url,
             "response_content": response.body_as_unicode(),
             "spider_id": spider_id,
             "crawled_at": datetime.datetime.now().isoformat(),
+            "spider_name": spider_name,
+            "request_user_agent": str(response.request.headers["User-Agent"]),
         }
 
     def make_storage_key(self, crawl_url):

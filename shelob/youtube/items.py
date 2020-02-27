@@ -18,6 +18,15 @@ def lower(value):
     """lower converts string to lowercase"""
     return value.lower() if isinstance(value, str) else ""
 
+def remove_beginning_slashes(value):
+    """Removes starting slashes // from urls"""
+    if not isinstance(value, str):
+        return ""
+    
+    if value.startswith("//"):
+        return value[2:]
+    return value
+
 def extract_within_paren(value):
     """Pulls all character within first instance of open / close parens"""
     if not isinstance(value, str):
@@ -28,6 +37,10 @@ def extract_within_paren(value):
 def exists(value):
     """Returns True if value exists else false"""
     return True if value is not None else False;
+
+def to_boolean(value):
+    """Returns True if value is True else False"""
+    return True if value is True else False;
 
 def with_replace(old, new=""):
     return lambda x: x.replace(old, new) if isinstance(x, str) else ""
@@ -123,7 +136,7 @@ class ChannelLinkItem(scrapy.Item):
         output_processor=TakeFirst(),
     )
 
-class AboutChannelItem(scrapy.Item):
+class ChannelAboutItem(scrapy.Item):
     screen_name = scrapy.Field(
         input_processor=MapCompose(strip),
         output_processor=TakeFirst()
@@ -145,7 +158,7 @@ class AboutChannelItem(scrapy.Item):
         output_processor=TakeFirst()
     )
     banner_url = scrapy.Field(
-        input_processor=MapCompose(strip, extract_within_paren),
+        input_processor=MapCompose(strip, remove_beginning_slashes),
         output_processor=TakeFirst()
     )
     subscriber_count = scrapy.Field(
@@ -153,7 +166,7 @@ class AboutChannelItem(scrapy.Item):
         output_processor=TakeFirst()
     )
     is_verified = scrapy.Field(
-        input_processor=MapCompose(exists),
+        input_processor=MapCompose(to_boolean),
         output_processor=TakeFirst()
     )
     joined_at = scrapy.Field(
