@@ -68,12 +68,13 @@ def extract_channel_id_from_path(value):
 
 def transform_subscriber_count(value):
     """takes a subscriber count display string in the format of 
-    (127, 243K, 12.5M) and transforms it to integer value"""
+    (127 subscriber, 243K, 12.5M) and transforms it to integer value"""
     if not isinstance(value, str):
         return
 
-    ch = value[-1].lower()
-    digits = value[:-1]
+    substr = value.split()[0]
+    ch = substr[-1].lower()
+    digits = substr[:-1]
 
     if ch == "k":
         zero_count = 3
@@ -86,7 +87,7 @@ def transform_subscriber_count(value):
         zero_count = 6 - (len(post_count))
         return digits.replace(".", "").ljust(len(post_count + pre_count) + zero_count, "0")
 
-    return value
+    return substr
 
 class ChannelSubscriberItem(scrapy.Item):
     channel_id = scrapy.Field(
@@ -126,7 +127,7 @@ class ChannelVideoItem(scrapy.Item):
         output_processor=TakeFirst()
     )    
 
-class ChannelLinkItem(scrapy.Item):
+class YoutubeLinkItem(scrapy.Item):
     source = scrapy.Field(
         input_processor=MapCompose(strip, lower),
         output_processor=TakeFirst()
@@ -136,7 +137,11 @@ class ChannelLinkItem(scrapy.Item):
         output_processor=TakeFirst(),
     )
 
-class ChannelAboutItem(scrapy.Item):
+class YoutubeProfileItem(scrapy.Item):
+    channel_id = scrapy.Field(
+        input_processor=MapCompose(strip),
+        output_processor=TakeFirst()
+    )
     screen_name = scrapy.Field(
         input_processor=MapCompose(strip),
         output_processor=TakeFirst()
@@ -162,7 +167,7 @@ class ChannelAboutItem(scrapy.Item):
         output_processor=TakeFirst()
     )
     subscriber_count = scrapy.Field(
-        input_processor=MapCompose(strip),
+        input_processor=MapCompose(strip, transform_subscriber_count, to_int),
         output_processor=TakeFirst()
     )
     is_verified = scrapy.Field(

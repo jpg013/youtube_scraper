@@ -1,4 +1,7 @@
 import os, sys, json, datetime
+import os
+import sys
+import shutil
 from twisted.internet import reactor
 import subprocess
 import boto3
@@ -7,6 +10,7 @@ from shelob.task_queue import TaskQueue
 from shelob.config import AppConfig
 from logging import getLogger
 import uuid
+import requests
 from enum import Enum
 
 logger = getLogger("shelob.crawler_manager")
@@ -25,7 +29,6 @@ class CrawlerManager():
             max_size=1000,
             worker_count=10,
             do_task=self.crawl_by_process,
-            result_handler=self.upload_results_to_s3,
         )
         self.task_queue.run()
 
@@ -46,44 +49,69 @@ class CrawlerManager():
         if reactor.running:
             reactor.stop()
 
-    def generate_crawler_id(self, crawler_name):
-        return "{}_{}".format(crawler_name, uuid.uuid4())
-
-    def upload_results_to_s3(self, crawler_id):
-        dir_path = "tmp/{}".format(crawler_id)
+    def update_task_object(self, task_id):
+        dir_path = "tmp/{}".format(task_id)
         for f in os.listdir(dir_path):
             file_name = os.path.join(dir_path, f)
-            object_name = "{}/{}".format(crawler_id, f)
+            object_name = "{}/{}".format(task_id, f)
             try:
                 self.s3_client.upload_file(file_name, self.s3_bucket, object_name)
                 logger.info("successfully uploaded results to {} for crawler \"{}\"".format(
                     object_name,
-                    crawler_id
+                    task_id
                 ))
             except Exception as e:
                 logger.error("Error uploading results to S3 for crawler: \"{}\": {}".format(
-                    crawler_id,
+                    task_id,
                     e
                 ))
+    
+    def create_task_object(self, task_id, crawler_name):
+        body = json.dumps({
+            "status": "in-progress",
+            "id": task_id,
+            "name": crawler_name,
+        })
+        object_name = "{}/{}".format(task_id, "results.json")
+        self.s3_client.put_object(
+            Body=body,
+            Bucket=self.s3_bucket, 
+            Key=object_name,
+        )
 
-    def schedule_crawl_task(self, crawler_name, crawler_args):
+    def schedule_crawl_task(self, crawler_name, task_id, **kwargs):
         try:
-            crawler_id = self.generate_crawler_id(crawler_name)
-            self.task_queue.add_task(crawler_name, crawler_id, crawler_args)
-            return crawler_id
+            self.task_queue.add_task(crawler_name, task_id, **kwargs)
         except Queue.Full:
             print("Queue is full")
             return None
 
-    def crawl_by_process(self, crawler_name, crawler_id, *args):
-        logger.info("starting crawler \"%s\" with id \"%s\" and args %s", crawler_name, crawler_id, repr(args))
-        cmd = ["python3", "shelob/crawler.py", crawler_name, crawler_id,  json.dumps(*args)]
+    def fire_callback(self, url, data):
+        headers = {'content-type': 'application/json'}
+        requests.post(url, json=data, headers=headers)
+
+    def cleanup_task(self, task_id):
+        # remove the directory containg temp files
+        dir_path = "tmp/{}".format(task_id)
+
+        try:
+            shutil.rmtree(dir_path)
+        except OSError as e:
+            print("Error: %s - %s." % (e.filename, e.strerror))
+
+    def crawl_by_process(self, crawler_name, task_id, **kwargs):
+        self.create_task_object(task_id, crawler_name)
+        logger.info("starting crawler \"%s\" with id \"%s\" and args %s", crawler_name, task_id, repr(kwargs))
+        cmd = ["python3", "shelob/crawler.py", crawler_name, task_id, json.dumps(kwargs)]
         process = subprocess.run(cmd)
 
         if process.returncode != 0:
-            logger.error("error running crawler \"%s\" with id \"%s\" and args %s", crawler_name, crawler_id, repr(args))
+            logger.error("error running crawler \"%s\" with id \"%s\" and args %s", crawler_name, task_id, repr(kwargs))
             return
-
-        # Return the crawler_id to the calling thread
-        return crawler_id
+        
+        try:
+            # upload results to storage object
+            self.update_task_object(task_id)
+        finally:
+            self.cleanup_task(task_id)
         

@@ -17,7 +17,7 @@ class BaseYoutubeSpider(scrapy.Spider):
         super(BaseYoutubeSpider, self).__init__(*args, **kwargs)
         self.make_response_dir(spider_id)
 
-    def make_channel_about_url(self, channel_id):
+    def make_channel_profile_url(self, channel_id):
         return f"{self.base_url}/channel/{channel_id}/about"
 
     def get_base_url(self):
@@ -27,16 +27,15 @@ class BaseYoutubeSpider(scrapy.Spider):
         self.response_dir = "tmp/{}".format(object_id)
         Path(self.response_dir).mkdir(parents=True, exist_ok=True)
 
-    def store_response(self, response, spider_id, spider_name):
+    def save_response(self, response, spider_id, spider_name):
         obj = self.make_storage_object(response, spider_id, spider_name)
-        key = self.make_storage_key(response.url)
-        path = os.path.join(self.response_dir, "{}".format(key))
+        path = os.path.join(self.response_dir, "response.json")
         
         with open(path, 'w', encoding="utf8") as outfile:
             json.dump(obj, outfile)
         
-    def store_spider_results(self, data):
-        key = "spider_results.json"
+    def save_results(self, data):
+        key = "results.json"
         path = os.path.join(self.response_dir, "{}".format(key))
         
         with open(path, 'w', encoding="utf8") as outfile:

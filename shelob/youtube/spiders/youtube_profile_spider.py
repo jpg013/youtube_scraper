@@ -2,8 +2,8 @@ import scrapy
 from scrapy import signals
 from scrapy.loader import ItemLoader
 from .base_youtube_spider import BaseYoutubeSpider
-import youtube.parsers.parse_channel_about as parsers
-from youtube.items import ChannelAboutItem, ChannelLinkItem
+import youtube.parsers.parse_channel_profile as parsers
+from youtube.items import ChannelProfileItem, ChannelLinkItem
 import dpath.util
 import json
 
@@ -122,8 +122,8 @@ def parse_user_name(obj):
     return dpath.util.get(obj, "/header/c4TabbedHeaderRenderer/navigationEndpoint/commandMetadata/webCommandMetadata/url")
 
     
-class ChannelAboutSpider(BaseYoutubeSpider):
-    name="youtube_channel_about_spider"
+class YoutubeProfileSpider(BaseYoutubeSpider):
+    name="youtube_profile_spider"
 
     def __init__(self, spider_id=None, *args, **kwargs):
         if spider_id is None:
@@ -131,7 +131,7 @@ class ChannelAboutSpider(BaseYoutubeSpider):
 
         self.spider_id = spider_id
         
-        super(ChannelAboutSpider, self).__init__(spider_id, *args, **kwargs)
+        super(YoutubeProfileSpider, self).__init__(spider_id, *args, **kwargs)
         
         self.parse_args(**kwargs)
 
@@ -147,7 +147,7 @@ class ChannelAboutSpider(BaseYoutubeSpider):
                 self.channel_id = value
 
     def start_requests(self):
-        url = self.make_channel_about_url(self.channel_id)
+        url = self.make_channel_profile_url(self.channel_id)
         
         yield scrapy.Request(
             url=url, 
@@ -169,7 +169,7 @@ class ChannelAboutSpider(BaseYoutubeSpider):
         # l.add_xpath("profile_image", "//a[contains(@class, 'channel-header-profile-image-container')]/img/@src")
         # for link in parsers.parse_channel_about_links(response):
         #     l.add_value("links", link)
-        l = ItemLoader(item=ChannelAboutItem())
+        l = ItemLoader(item=ChannelProfileItem())
         l.add_value("location", parse_location(json_data))
         l.add_value("description", parse_description(json_data))
         l.add_value("banner_url", parse_banner_url(json_data))
@@ -180,6 +180,7 @@ class ChannelAboutSpider(BaseYoutubeSpider):
         l.add_value("user_name", parse_user_name(json_data))
         l.add_value("screen_name", parse_screen_name(json_data))
         l.add_value("profile_image", parse_avatar_url(json_data))
+        l.add_value("channel_id", parse_channel_id(json_data))
         
         primary_links = parse_primary_links(json_data) or []
 
@@ -207,7 +208,7 @@ class ChannelAboutSpider(BaseYoutubeSpider):
 
     def handle_response(self, response):
         try:        
-            self.store_response(response, self.spider_id, ChannelAboutSpider.name)
+            self.save_response(response, self.spider_id, ChannelProfileSpider.name)
             
             initial_data_json = self.extract_initial_data_json(response.text)
             if initial_data_json is None:
@@ -224,16 +225,21 @@ class ChannelAboutSpider(BaseYoutubeSpider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super(ChannelAboutSpider, cls).from_crawler(crawler, *args, **kwargs)
+        spider = super(ChannelProfileSpider, cls).from_crawler(crawler, *args, **kwargs)
         crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
         return spider
 
     def spider_closed(self, spider, reason):
         print("SPIDER IS GETTING CLOSED", reason)
-
         try:
-            results = dict(self.spider_results)
-            results["links"] = list(map(lambda x: dict(x), results["links"]))
-            self.store_spider_results(results)
+            results = {
+                "id": self.spider_id,
+                "status": "done",
+            }
+            item = dict(self.spider_results)
+            item["links"] = list(map(lambda x: dict(x), item["links"]))
+            results["items"] = [item]            
+            
+            self.save_results(results)
         except Exception as e:
             print(e)

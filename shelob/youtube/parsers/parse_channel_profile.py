@@ -1,8 +1,8 @@
 import urllib.parse
 from scrapy.loader import ItemLoader
-from youtube.items import ChannelLinkItem
+from youtube.items import YoutubeLinkItem
 
-def parse_channel_about_links(response):
+def parse_channel_profile_links(response):
     links = []
     links_sel = response.xpath("//li[@class='channel-links-item']")
     

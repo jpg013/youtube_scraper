@@ -27,7 +27,7 @@ def create_app():
         from shelob.errors import add_error_handlers
 
         # Register Blueprints
-        app.register_blueprint(routes.youtube_crawler_bp)
+        app.register_blueprint(routes.crawlers_bp)
         app.register_blueprint(routes.health_bp)
         app.register_blueprint(routes.config_bp)
 
