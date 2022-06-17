@@ -32,7 +32,7 @@ python-dateutil==2.8.1
 queuelib==1.5.0
 requests==2.22.0
 s3transfer==0.3.2
-Scrapy==1.8.0
+Scrapy==2.6.1
 scrapy-crawlera==1.6.0
 Scrapy-UserAgents==0.0.1
 service-identity==18.1.0
